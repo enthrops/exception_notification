@@ -10,7 +10,7 @@ module ExceptionNotifier
     :pre_callback, :post_callback,
     :email_prefix, :email_format, :sections, :background_sections,
     :verbose_subject, :normalize_subject, :delivery_method, :mailer_settings,
-    :email_headers, :mailer_parent, :template_path, :deliver_with)
+    :email_headers, :mailer_parent, :template_path, :deliver_with, :modify_subject)
 
     module Mailer
       class MissingController
@@ -63,6 +63,11 @@ module ExceptionNotifier
             subject << " (#{@exception.class})"
             subject << " #{@exception.message.inspect}" if @options[:verbose_subject]
             subject = EmailNotifier.normalize_digits(subject) if @options[:normalize_subject]
+
+            if @options[:modify_subject]
+              subject = @options[:modify_subject].call(subject, @env, @options)
+            end
+
             subject.length > 120 ? subject[0...120] + "..." : subject
           end
 
@@ -140,7 +145,7 @@ module ExceptionNotifier
         :sender_address, :exception_recipients,
         :pre_callback, :post_callback,
         :email_prefix, :email_format, :sections, :background_sections,
-        :verbose_subject, :normalize_subject, :delivery_method, :mailer_settings,
+        :verbose_subject, :normalize_subject, :modify_subject, :delivery_method, :mailer_settings,
         :email_headers, :mailer_parent, :template_path, :deliver_with].include?(k)}.each{|k,v| send("#{k}=", v)}
     end
 
@@ -196,6 +201,7 @@ module ExceptionNotifier
         :background_sections => %w(backtrace data),
         :verbose_subject => true,
         :normalize_subject => false,
+        :modify_subject => nil,
         :delivery_method => nil,
         :mailer_settings => nil,
         :email_headers => {},
